@@ -12,7 +12,7 @@ def kasiski(texte_chiffre, taille_ngramme_min=3, taille_ngramme_max=5, longueur_
       - Si la longueur 2 est à peine meilleure qu’une autre longueur > 2,
         on choisit plutôt l’autre (évite de tomber toujours sur 2).
     """
-    
+
     texte_nettoye = re.sub(r'[^A-Z]', '', texte_chiffre.upper())
     if len(texte_nettoye) < 20:
         return None 
@@ -83,7 +83,14 @@ def kasiski(texte_chiffre, taille_ngramme_min=3, taille_ngramme_max=5, longueur_
     return meilleure_longueur
 
 if __name__ == "__main__":
-    texte_chiffre = input("Entrez le texte chiffré : ")
+    nom_fichier = input("Entrez le nom du fichier contenant le texte chiffré : ")
+
+    try:
+        with open(nom_fichier, "r", encoding="utf-8") as f:
+            texte_chiffre = f.read()
+    except FileNotFoundError:
+        print("Erreur : fichier introuvable.")
+        exit()
     longueur_probable = kasiski(
         texte_chiffre,
         taille_ngramme_min=3,
