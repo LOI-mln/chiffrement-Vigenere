@@ -2,20 +2,10 @@ import re
 from collections import Counter
 
 def kasiski(texte_chiffre, taille_ngramme_min=3, taille_ngramme_max=5, longueur_cle_max=20):
-    """
-    Estime UNE seule longueur probable de la clé utilisée pour le chiffrement Vigenère
-    grâce à la méthode de Kasiski.
-    
-    Améliorations incluses :
-      - On teste plusieurs tailles d’ngrams (3 à 5 par défaut).
-      - Chaque distance trouvée distribue son vote sur ses diviseurs (pondération).
-      - Si la longueur 2 est à peine meilleure qu’une autre longueur > 2,
-        on choisit plutôt l’autre (évite de tomber toujours sur 2).
-    """
 
     texte_nettoye = re.sub(r'[^A-Z]', '', texte_chiffre.upper())
     if len(texte_nettoye) < 20:
-        return None 
+        return []
 
     votes_diviseurs = Counter()
 
@@ -61,26 +51,15 @@ def kasiski(texte_chiffre, taille_ngramme_min=3, taille_ngramme_max=5, longueur_
         taille_ngramme += 1
 
     if not votes_diviseurs:
-        return None  
+        return []
 
-    meilleure_longueur = None
-    meilleur_score = -1.0
-    seconde_longueur = None
-    second_score = -1.0
+    longueurs_triees = sorted(votes_diviseurs.items(), key=lambda x: (-x[1], x[0]))
 
-    for longueur, score in votes_diviseurs.items():
-        if (score > meilleur_score) or (score == meilleur_score and (meilleure_longueur is None or longueur < meilleure_longueur)):
-            seconde_longueur, second_score = meilleure_longueur, meilleur_score
-            meilleure_longueur, meilleur_score = longueur, score
-        elif (score > second_score) or (score == second_score and (seconde_longueur is None or longueur < seconde_longueur)):
-            seconde_longueur, second_score = longueur, score
+    if len(longueurs_triees) > 1 and longueurs_triees[0][0] == 2:
+        if longueurs_triees[1][0] > 2 and (longueurs_triees[0][1] - longueurs_triees[1][1]) <= 0.5:
+            longueurs_triees = [longueurs_triees[1], longueurs_triees[0]] + longueurs_triees[2:]
 
-
-    if meilleure_longueur == 2 and seconde_longueur is not None:
-        if (seconde_longueur > 2) and (meilleur_score - second_score) <= 0.5:
-            return seconde_longueur
-
-    return meilleure_longueur
+    return [longueur for longueur, score in longueurs_triees]
 
 if __name__ == "__main__":
     nom_fichier = input("Entrez le nom du fichier contenant le texte chiffré : ")
@@ -91,13 +70,13 @@ if __name__ == "__main__":
     except FileNotFoundError:
         print("Erreur : fichier introuvable.")
         exit()
-    longueur_probable = kasiski(
+    longueurs_probables = kasiski(
         texte_chiffre,
         taille_ngramme_min=3,
         taille_ngramme_max=5,
         longueur_cle_max=20
     )
-    if longueur_probable:
-        print("Longueur probable de la clé :", longueur_probable)
+    if longueurs_probables:
+        print("Tailles probables de la clé (par ordre de probabilité) :", longueurs_probables)
     else:
         print("Impossible d'estimer la longueur de la clé (texte trop court ou peu de répétitions).")
